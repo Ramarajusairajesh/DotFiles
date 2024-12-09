@@ -101,6 +101,8 @@ echo "Do the same for konsole add \"konsole\" for the regular expression window 
 echo "Do you want to add extension to brave?"
 read response
 if $response;then
+  echo "Running via non root user"
+  sudo -u $(pwd | cut -d '/' -f3) bash <<EOF
   echo " Installing chrome extensions via cli is finiky if this doesn't work try manual installation"
   EXT_DIR="$HOME/.config/BraveSoftware/Brave-Browser/Default/Extensions"
   mkdir -p "$EXT_DIR"
@@ -115,7 +117,7 @@ if $response;then
   done
   
   echo "Extensions installed. Restart Brave to apply changes."
-
+EOF
 #If environment varialbles for these doesn't added add these manually
 #fish_add_path /opt/nvim-linux64/bin/
 #fish_add_path ~/.cargo 
@@ -140,6 +142,26 @@ echo "Does your system have NVIDIA GPU (Y) Or (N)"
 read GPU
 if [[$GPU =="Y"]]; then
 	echo "Installing the latest NVIDIA driver"
-	$(apt search nvidia-driver | grep open | grep -v -e "server" -e "headless" | grep -E '[0-9]' | tail -n 1 | cut -d '/' -f | xargs apt install -y)
+	apt install $(apt search nvidia-driver | grep open | grep -v -e "server" -e "headless" | grep -E '[0-9]' | tail -n 1 | cut -d '/' -f)
+  apt install $(apt search nvidia-util|grep -v -e "server" -e "headless"|grep -E '[0-9]'|tail -n 1| cut -d '/' -f1)
 fi
+
+echo " Are you used Debian (D) derived or Ubuntu (U) derived os to install cuda toolkit"
+
+read cuda
+if $cuda =="D";then
+  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-ubuntu2404.pin
+  sudo mv cuda-ubuntu2404.pin /etc/apt/preferences.d/cuda-repository-pin-600
+  wget https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda-repo-ubuntu2404-12-6-local_12.6.3-560.35.05-1_amd64.deb
+  sudo dpkg -i cuda-repo-ubuntu2404-12-6-local_12.6.3-560.35.05-1_amd64.deb
+  sudo cp /var/cuda-repo-ubuntu2404-12-6-local/cuda-*-keyring.gpg /usr/share/keyrings/
+  sudo apt-get update
+  sudo apt-get -y install cuda-toolkit-12-6
+elif $cuda =="U";then
+  wget https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda-repo-debian12-12-6-local_12.6.3-560.35.05-1_amd64.deb
+  sudo dpkg -i cuda-repo-debian12-12-6-local_12.6.3-560.35.05-1_amd64.deb
+  sudo cp /var/cuda-repo-debian12-12-6-local/cuda-*-keyring.gpg /usr/share/keyrings/
+  sudo add-apt-repository contrib
+  sudo apt-get update
+  sudo apt-get -y install cuda-toolkit-12-6
 reboot -f
