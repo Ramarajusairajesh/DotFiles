@@ -116,14 +116,15 @@ if $response;then
 #If environment varialbles for these doesn't added add these manually
 #fish_add_path /opt/nvim-linux64/bin/
 #fish_add_path ~/.cargo 
-
+echo "Installing docker"
+apt install docker.io docker-compose docker-registry
 echo "Insatlling docker"
 sudo usermod -aG docker $USER
 
 
 
+#If the group doesn't solve you non root docker issue try manually checking the groups and add it if it still persist run the follow commands
 
-#apt install docker.io docker-compose docker-registry
 #apt install -y uidmap dbus-user-session
 #curl -fsSL https://get.docker.com | sh
 #dockerd-rootless-setuptool.sh install
