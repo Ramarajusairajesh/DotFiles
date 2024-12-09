@@ -18,9 +18,9 @@ EXTENSIONS=(
     "hfjbmagddngcpeloejdejnfgbamkjaeg"
 )
 
-if [ "$(id -u)" -ne 0]; then
-	echo "\032[31mPlease run the script with root previlege to run the installer\032[0m"
-	exit 1
+if [ "$(id -u)" -ne 0]; then 
+  echo -e "\033[0;32m Lacking root previllege ! Run this script either with sudo or as root !\033[0m"
+  exit 1
 fi
 
 apt install curl
@@ -100,6 +100,7 @@ echo "Do the same for konsole add \"konsole\" for the regular expression window 
 echo "Do you want to add extension to brave?"
 read response
 if $response;then
+  echo " Installing chrome extensions via cli is finiky if this doesn't work try manual installation"
   EXT_DIR="$HOME/.config/BraveSoftware/Brave-Browser/Default/Extensions"
   mkdir -p "$EXT_DIR"
   
