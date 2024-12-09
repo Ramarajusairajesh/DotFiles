@@ -9,7 +9,7 @@ echo "#                                         #"
 echo "###########################################"
 
 EXTENSIONS=(
-    "pifalnbglchfojkfmechjalgbjoodlpg"
+    "pifalnbglchfojkfmechjalgbjoodlpg" #dark reader extensio
     "eimadpbcbfnmbkopoojfekhnkhdbieeh"
     "gioehmkjkeamcinbdelehlpnpdcdjpdp"
     "fdpohaocaechififmbbbbbknoalclacl"
@@ -104,6 +104,7 @@ if $response;then
   mkdir -p "$EXT_DIR"
   
   # Install extensions
+  echo "Installing chrome extensions via cli is finiky so if this doesn't work comment this session and add the extensions manually yourself"
   for ID in "${EXTENSIONS[@]}"; do
       URL="https://clients2.google.com/service/update2/crx?response=redirect&prodversion=96.0&x=id%3D${ID}%26installsource%3Dondemand%26uc"
       DEST="$EXT_DIR/$ID"
