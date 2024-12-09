@@ -87,6 +87,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 echo "installing gpu recorder and zen browser"
 flatpak install flathub com.dec05eba.gpu_screen_recorder
 flatpak install flathub io.github.zen_browser.zen
+flatpak install flathub com.heroicgameslauncher.hgl
 
 cp ./keyboard.kksrc ~/.config/kglobalshortcutsrc
 
