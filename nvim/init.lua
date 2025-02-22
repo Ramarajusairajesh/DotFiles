@@ -3,17 +3,21 @@ require("config.lazy")
 vim.opt.relativenumber = false
 vim.opt.number = true
 vim.opt.clipboard = "unnamedplus"
+vim.opt.showmatch = true
+vim.opt.matchtime = 2
 function Transparent()
 	color = "tokyonight"
 	vim.cmd.colorscheme(color)
-	vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+	--vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+	--vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+	vim.api.nvim_set_hl(0, "Normal", { bg = "#000000" })
+	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "#000000" })
 end
 
 local function make_backgrounds_transparent_except_visual()
 	for _, group in pairs(vim.fn.getcompletion("", "highlight")) do
 		local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
-		hl.bg = "none" -- Make background transparent
+		hl.bg = "#000000" -- Make background transparent
 		vim.api.nvim_set_hl(0, group, hl)
 	end
 
@@ -137,3 +141,33 @@ vim.keymap.set("x", "`", "c``<Esc>P", opts)
 vim.keymap.set("x", "(", "c()<Esc>P", opts)
 vim.keymap.set("x", "[", "c[]<Esc>P", opts)
 vim.keymap.set("x", "{", "c{}<Esc>P", opts)
+
+-- Continue to select text in visual mode when pressed alt+e and alt+b to go to the beginning and ending of the paragraph
+vim.keymap.set("v", "<M-e>", "o$") -- Extend selection to end of the line
+vim.keymap.set("v", "<M-b>", "o^") -- Extend selection to beginning of the line
+
+--Man page
+
+vim.g.man_hardwrap = 0 -- Prevents wrapping
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "man",
+	command = "wincmd o", -- Closes all other windows when opening a man page
+})
+
+-- Undo tree keybinding
+vim.keymap.set("n", "<A-Z>", "<cmd>Telescope undo<cr>", { desc = "Undo history" })
+
+--Exit nvim close all files
+vim.keymap.set("n", "<A-q>", "<cmd>q<cr>", { desc = "Exit Neovim" })
+
+-- Show docs for the highlighted function or the function under the cursor
+vim.keymap.set({ "n", "v" }, "q", function()
+	local ft = vim.bo.filetype
+	if vim.tbl_contains({ "vim", "help" }, ft) then
+		vim.cmd("h " .. vim.fn.expand("<cword>"))
+	elseif vim.lsp.buf and vim.lsp.buf.hover then
+		vim.lsp.buf.hover()
+	else
+		print("No documentation available")
+	end
+end, { silent = true, desc = "Show Documentation" })
