@@ -5,24 +5,25 @@ vim.opt.number = true
 vim.opt.clipboard = "unnamedplus"
 vim.opt.showmatch = true
 vim.opt.matchtime = 2
+vim.opt.termguicolors = true
 function Transparent()
 	color = "tokyonight"
 	vim.cmd.colorscheme(color)
 	--vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
 	--vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-	vim.api.nvim_set_hl(0, "Normal", { bg = "#000000" })
-	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "#000000" })
+	vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
 end
 
 local function make_backgrounds_transparent_except_visual()
 	for _, group in pairs(vim.fn.getcompletion("", "highlight")) do
 		local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
-		hl.bg = "#000000" -- Make background transparent
+		hl.bg = "none" -- Make background transparent
 		vim.api.nvim_set_hl(0, group, hl)
 	end
 
 	-- Set a distinct background color for Visual mode
-	vim.api.nvim_set_hl(0, "Visual", { bg = "#FFFFFF", fg = "none" }) -- Replace #3B3F58 with your desired color
+	vim.api.nvim_set_hl(0, "Visual", { bg = "#888a89", fg = "none" }) -- Replace #3B3F58 with your desired color
 end
 
 -- Apply transparency and Visual mode exception
@@ -88,19 +89,22 @@ vim.api.nvim_set_keymap("n", "<A-K>", "<C-w>K", { noremap = true, silent = true 
 vim.api.nvim_set_keymap("n", "<A-J>", "<C-w>J", { noremap = true, silent = true })
 -- Swap the current pane with the one belowright
 
--- Function to toggle Netrw (open or close)
-
 -- Function to toggle Netrw (open or close) without quitting Neovim
+
 function ToggleNetrw()
-	-- Check if Netrw is already open (by checking the window's filetype)
-	if vim.bo.filetype == "netrw" then
-		-- If Netrw is open, go back to the previous file (previous buffer)
-		vim.cmd("bprevious")
-	else
-		-- If Netrw is not open, save the current file and open Netrw
-		vim.cmd("w")
-		vim.cmd("Explore")
+	-- Check if Netrw is open in any window
+	for _, win in ipairs(vim.api.nvim_list_wins()) do
+		local buf = vim.api.nvim_win_get_buf(win)
+		if vim.bo[buf].filetype == "netrw" then
+			-- Close the Netrw window
+			vim.api.nvim_win_close(win, true)
+			return
+		end
 	end
+
+	-- If Netrw is not open, save the current file and open Netrw
+	vim.cmd("w") -- Save the file
+	vim.cmd("Explore")
 end
 
 -- Map Ctrl+I to toggle Netrw
@@ -141,10 +145,16 @@ vim.keymap.set("x", "`", "c``<Esc>P", opts)
 vim.keymap.set("x", "(", "c()<Esc>P", opts)
 vim.keymap.set("x", "[", "c[]<Esc>P", opts)
 vim.keymap.set("x", "{", "c{}<Esc>P", opts)
+vim.keymap.set("x", "<", "c<><Esc>P", opts)
 
 -- Continue to select text in visual mode when pressed alt+e and alt+b to go to the beginning and ending of the paragraph
 vim.keymap.set("v", "<M-e>", "o$") -- Extend selection to end of the line
 vim.keymap.set("v", "<M-b>", "o^") -- Extend selection to beginning of the line
+
+vim.keymap.set("n", "<A-L>", "<cmd>vertical resize -3<CR>", { desc = "Decrease Window Height" })
+vim.keymap.set("n", "<A-H>", "<cmd>vertical resize +2<CR>", { desc = "Increase Window Height" })
+vim.keymap.set("n", "<A-J>", "<cmd>horizontal resize +2<CR>", { desc = "Increase Window Height" })
+vim.keymap.set("n", "<A-K>", "<cmd>horizontal resize -2<CR>", { desc = "Increase Window Height" })
 
 --Man page
 
@@ -154,8 +164,8 @@ vim.api.nvim_create_autocmd("FileType", {
 	command = "wincmd o", -- Closes all other windows when opening a man page
 })
 
--- Undo tree keybinding
 vim.keymap.set("n", "<A-Z>", "<cmd>Telescope undo<cr>", { desc = "Undo history" })
+-- Undo tree keybinding
 
 --Exit nvim close all files
 vim.keymap.set("n", "<A-q>", "<cmd>q<cr>", { desc = "Exit Neovim" })
@@ -171,3 +181,36 @@ vim.keymap.set({ "n", "v" }, "q", function()
 		print("No documentation available")
 	end
 end, { silent = true, desc = "Show Documentation" })
+
+--Experimental
+
+vim.api.nvim_create_user_command("PdfView", function()
+	local file = vim.fn.expand("%")
+	vim.fn.jobstart({ "zathura", file }, { detach = true })
+end, {})
+
+-- More robust temporary directory handling
+vim.o.directory = os.getenv("HOME") .. "/.cache/nvim/swap//"
+vim.o.undodir = os.getenv("HOME") .. "/.cache/nvim/undo//"
+vim.o.backupdir = os.getenv("HOME") .. "/.cache/nvim/backup//"
+
+-- Ensure directories exist
+vim.fn.mkdir(vim.o.directory, "p")
+vim.fn.mkdir(vim.o.backupdir, "p")
+vim.fn.mkdir(vim.o.undodir, "p")
+
+-- Go to the definition line or file
+
+vim.keymap.set("n", "<leader>vh", function()
+	vim.cmd("vsplit | norm gf")
+end, { desc = "Open header file in vertical split" })
+
+vim.keymap.set("n", "<M-g>", function()
+	vim.cmd("Git") -- Open Git status
+	vim.cmd("wincmd H") -- Move to horizontal split
+	vim.cmd("belowright Git log --graph --oneline --decorate") -- Show Git graph
+end, { desc = "Fugitive Git Status & Graph" })
+-- When delete it don't paste it in clipboard
+vim.keymap.set("n", "d", '"_d', { noremap = true })
+vim.keymap.set("n", "D", '"_D', { noremap = true })
+vim.keymap.set("v", "d", '"_d', { noremap = true })
