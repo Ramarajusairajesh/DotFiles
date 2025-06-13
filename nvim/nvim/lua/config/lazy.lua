@@ -13,12 +13,38 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 	end
 end
 vim.opt.rtp:prepend(lazypath)
-require("lazy").setup({
 
+-- In your LazyVim config
+vim.api.nvim_create_autocmd({ "FileType" }, {
+	pattern = { "c", "cpp", "h", "hpp" },
+	callback = function()
+		vim.lsp.start({
+			name = "clangd",
+			cmd = { "clangd" },
+		})
+	end,
+})
+require("lazy").setup({
 	spec = {
 		-- add LazyVim and import its plugins
 		{ "LazyVim/LazyVim", import = "lazyvim.plugins" },
 		-- import/override with your plugins
+		{
+			"arminveres/md-pdf.nvim",
+			branch = "main", -- you can assume that main is somewhat stable until releases will be made
+			lazy = true,
+			keys = {
+				{
+					"<leader>,",
+					function()
+						require("md-pdf").convert_md_to_pdf()
+					end,
+					desc = "Markdown preview",
+				},
+			},
+			---@type md-pdf.config
+			opts = {},
+		},
 		{ import = "plugins" },
 	},
 	defaults = {
@@ -30,7 +56,7 @@ require("lazy").setup({
 		version = false, -- always use the latest git commit
 		-- version = "*", -- try installing the latest stable version for plugins that support semver
 	},
-	install = { colorscheme = { "tokyonight", "habamax" } },
+	install = { colorscheme = { "tokyonight", "habamax", "catppuccin" } },
 	checker = {
 		enabled = true, -- check for plugin updates periodically
 		notify = false, -- notify on update

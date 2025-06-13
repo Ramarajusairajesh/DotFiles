@@ -1,11 +1,22 @@
 -- bootstrap lazy.nvim, LazyVim and your plugins
 require("config.lazy")
+require("plugins.java_init")
 vim.opt.relativenumber = false
+vim.cmd("filetype plugin indent on")
+-- Set tab width to 8 spaces
+vim.opt.tabstop = 8
+vim.opt.softtabstop = 8
+vim.opt.shiftwidth = 8
+vim.opt.expandtab = false
+
 vim.opt.number = true
 vim.opt.clipboard = "unnamedplus"
 vim.opt.showmatch = true
 vim.opt.matchtime = 2
 vim.opt.termguicolors = true
+vim.opt.wrap = true
+vim.keymap.set("n", "xx", "dd", { noremap = true })
+
 function Transparent()
 	color = "tokyonight"
 	vim.cmd.colorscheme(color)
@@ -31,6 +42,9 @@ make_backgrounds_transparent_except_visual()
 
 -- NeoTree configuration
 require("neo-tree").setup({
+	window = {
+		position = "right", -- Move Neo-tree to the right
+	},
 	filesystem = {
 		filtered_items = {
 			visible = true, -- Show dotfiles
@@ -214,3 +228,151 @@ end, { desc = "Fugitive Git Status & Graph" })
 vim.keymap.set("n", "d", '"_d', { noremap = true })
 vim.keymap.set("n", "D", '"_D', { noremap = true })
 vim.keymap.set("v", "d", '"_d', { noremap = true })
+
+-- Enhanced Visual Mode Replace (with 'y/n' prompts and proper range handling)
+
+vim.keymap.set("x", "r", function()
+	local buf = 0
+	local start_pos = vim.fn.getpos("'<")
+	local end_pos = vim.fn.getpos("'>")
+	local start_row = start_pos[2] - 1
+	local start_col = start_pos[3] - 1
+	local end_row = end_pos[2] - 1
+	local end_col = end_pos[3]
+
+	-- Handle column ordering (fix for visual block mode)
+	if start_row == end_row and start_col > end_col then
+		start_col, end_col = end_col, start_col
+	end
+
+	-- Clamp end_col to the line length
+	local end_line = vim.api.nvim_buf_get_lines(buf, end_row, end_row + 1, false)[1] or ""
+	if end_col > #end_line then
+		end_col = #end_line
+	end
+
+	-- Get the selected text
+	local selected_lines = vim.api.nvim_buf_get_text(buf, start_row, start_col, end_row, end_col, {})
+	local selection = table.concat(selected_lines, "\n")
+	if selection == "" then
+		return
+	end
+
+	-- Ask user for replacement
+	local replacement = vim.fn.input("Replace with: ")
+	if replacement == "" then
+		return
+	end
+
+	-- Global or once?
+	local is_global = vim.fn.input("Replace globally? (y/n): ")
+	if is_global ~= "y" and is_global ~= "n" then
+		return
+	end
+
+	if is_global == "y" then
+		-- Get all buffer content
+		local all_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+		local all_text = table.concat(all_lines, "\n")
+
+		-- Exact match?
+		local exact_word = vim.fn.input("Match exact word only? (y/n): ")
+		local pattern = vim.pesc(selection)
+
+		if exact_word == "y" then
+			pattern = "%f[%w]" .. pattern .. "%f[%W]"
+		end
+
+		-- Perform global replacement
+		local new_text = all_text:gsub(pattern, replacement)
+		local new_lines = vim.split(new_text, "\n")
+
+		-- Replace entire buffer content
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, new_lines)
+	else
+		-- Just replace selected text once
+		local new_text = selection:gsub(vim.pesc(selection), replacement, 1)
+		vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, vim.split(new_text, "\n"))
+	end
+end, { desc = "Interactive visual mode replace" })
+
+-- follow curely braces
+-- in your LazyVim config or keymaps
+vim.keymap.set("n", "<leader>%", "%", { desc = "Jump to matching brace" })
+
+-- Cut with x in Visual mode
+vim.keymap.set("x", "x", '"+d', { noremap = true, silent = true })
+-- Open definitions in vertical splits rather than on same buffer (Not working)
+-- vim.keymap.set("n", "gd", function()
+-- 	require("telescope.builtin").lsp_definitions({
+-- 		jump_type = "vsplit",
+-- 	})
+-- end, { desc = "Go to definition in vertical split" })
+
+-- NOte taking bold and text highlighting
+-- Utility function to get visual selection range
+local function get_visual_range()
+	local start_pos = vim.fn.getpos("'<")
+	local end_pos = vim.fn.getpos("'>")
+	return start_pos, end_pos
+end
+
+-- Function to highlight selection with given highlight group
+local function highlight_selection(hl_group)
+	local start_pos, end_pos = get_visual_range()
+	-- Clear previous match
+	vim.cmd("call matchdelete(99)")
+	-- Add the new match
+	vim.cmd(
+		string.format(
+			"call matchadd('%s', '\\%%%dl\\%%>%dc\\_.*\\%%<%dl\\%%<%dc', 99)",
+			hl_group,
+			start_pos[2],
+			start_pos[3] - 1,
+			end_pos[2],
+			end_pos[3]
+		)
+	)
+end
+
+-- Notes taking shortcuts
+vim.keymap.set("v", "<C-b>", function()
+	vim.fn.feedkeys(":lua ChooseBackgroundColor()<CR>", "n")
+end, { noremap = true, silent = true })
+
+function ChooseBackgroundColor()
+	vim.ui.input({ prompt = "Choose background: (b)lue, (r)ed, (y)ellow: " }, function(choice)
+		if choice == "b" then
+			apply_highlight("BlueBg")
+		elseif choice == "r" then
+			apply_highlight("RedBg")
+		elseif choice == "y" then
+			apply_highlight("YellowBg")
+		end
+	end)
+end
+
+-- Define highlight groups
+vim.api.nvim_set_hl(0, "BlueText", { fg = "#0000ff" })
+vim.api.nvim_set_hl(0, "RedText", { fg = "#ff0000" })
+vim.api.nvim_set_hl(0, "YellowText", { fg = "#ffff00" })
+
+vim.api.nvim_set_hl(0, "BlueBg", { bg = "#0000ff" })
+vim.api.nvim_set_hl(0, "RedBg", { bg = "#ff0000" })
+vim.api.nvim_set_hl(0, "YellowBg", { bg = "#ffff00" })
+
+vim.api.nvim_set_hl(0, "BoldText", { bold = true })
+
+-- Optional: clear highlights mapping (you might want to reset)
+vim.keymap.set("n", "<leader>ch", function()
+	local ns = vim.api.nvim_create_namespace("visual_highlight")
+	vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+end, { noremap = true, silent = true })
+
+-- Double click to go to definition
+vim.api.nvim_set_keymap(
+	"n",
+	"<2-LeftMouse>",
+	"<cmd>lua vim.lsp.buf.definition()<CR>",
+	{ noremap = true, silent = true }
+)
